@@ -8,8 +8,8 @@ using namespace std;
 
 int main()
 {
-    PPMImage test(10, 10, 255);
-    //PPMImage tester(10, 10, 255);
+    PPMImage test(5, 10, 255);
+    PPMImage tester(9, 8, 255);
 
    /*vector<RGBValue> vec;
     RGBValue red;
@@ -19,18 +19,17 @@ int main()
         vec.push_back(red);
     }
 
-
     PPMLine tester(vec, 255);*/
     RGBValue purple;
     purple.blue = 128;
     purple.red = 128;
     //test.drawLine(3, 7, 8, 5, purple);
-    test.drawLine(0, 0, 0, 3, purple);
+    test.drawLine(0, 0, 4, 0, purple);
+    test.drawLine(0, 0, 0, 9, purple);
+    tester.drawLine(2, 0, 2, 7, purple);
     //tester = test;
 
-    //PPMImage test2 = test + tester;
+    PPMImage test2 = test + tester;
 
     system("pause");
 }
-
-

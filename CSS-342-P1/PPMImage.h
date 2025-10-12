@@ -24,7 +24,7 @@ public:
 	PPMImage operator + (const PPMLine& rightValue);
 	PPMImage operator - (const PPMImage& rightValue);
 	PPMImage& operator += (const PPMLine& rightValue);
-	PPMImage& operator - ();
+	PPMImage operator - () const;
 	bool operator == (const PPMImage& rightValue) const;
 	bool operator != (const PPMImage& rightValue) const;
 	friend ostream& operator << (ostream& out, const PPMImage& image);

@@ -89,9 +89,55 @@ PPMImage& PPMImage::operator = (const PPMImage& rightValue) {
 
     return *this;
 }
-PPMImage PPMImage::operator + (const PPMImage& rightValue) {
-    PPMImage test;
-    return test;
+PPMImage PPMImage::operator+(const PPMImage& rightValue) {
+    PPMImage result;
+    RGBValue newColor;
+
+    int smallerWidth = min(width, rightValue.width);
+    int smallerHeight = min(height, rightValue.height);
+
+    if (width >= rightValue.width) {
+        result = *this;
+
+        if (height < rightValue.height) {
+            for (int i = height; i < rightValue.height; i++) {
+                PPMLine newLine;
+                newLine.setWidth(width);
+                for (int j = 0; j < rightValue.lines[i].getWidth(); j++) {
+                    newLine[j] = rightValue.lines[i][j];
+                }
+                result.lines.push_back(newLine);
+                result.height++;
+            }
+        }
+    }
+    else {
+        result = rightValue;
+
+        if (height > rightValue.height) {
+            for (int i = rightValue.height; i < height; i++) {
+                PPMLine newLine;
+                newLine.setWidth(rightValue.width);
+                for (int j = 0; j < lines[i].getWidth(); j++) {
+                    newLine[j] = lines[i][j];
+                }
+                result.lines.push_back(newLine);
+                result.height++;
+            }
+        }
+    }
+
+    result.maxColor = max(maxColor, rightValue.maxColor);
+
+    for (int i = 0; i < smallerHeight; i++) {
+        for (int j = 0; j < smallerWidth; j++) {
+            newColor.red = (lines[i][j].red + rightValue.lines[i][j].red) % (result.maxColor + 1);
+            newColor.green = (lines[i][j].green + rightValue.lines[i][j].green) % (result.maxColor + 1);
+            newColor.blue = (lines[i][j].blue + rightValue.lines[i][j].blue) % (result.maxColor + 1);
+            result.lines[i][j] = newColor;
+        }
+    }
+    return result;
 }
 PPMImage PPMImage::operator + (const PPMLine& rightValue) {
     if (width == 0 || width != rightValue.getWidth()) {
@@ -113,8 +159,18 @@ PPMImage& PPMImage::operator += (const PPMLine& rightValue) {
     PPMImage test;
     return test;
 }
-PPMImage& PPMImage::operator - () {
-    
+PPMImage PPMImage::operator - () const {
+
+    PPMImage invertedCopy = *this;
+
+    for (int i = 0; i < invertedCopy.lines.size(); i++) {
+        for (int j = 0; j < invertedCopy.lines[i].getWidth(); j++) {
+            invertedCopy.lines[i][j].red = invertedCopy.maxColor - invertedCopy.lines[i][j].red;
+            invertedCopy.lines[i][j].green = invertedCopy.maxColor - invertedCopy.lines[i][j].green;
+            invertedCopy.lines[i][j].blue = invertedCopy.maxColor - invertedCopy.lines[i][j].blue;
+        }
+    }
+    return invertedCopy;
 }
 bool PPMImage::operator == (const PPMImage& rightValue) const {
 	if (width == rightValue.width && height == rightValue.height) {
