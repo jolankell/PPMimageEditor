@@ -1,9 +1,17 @@
 #include "PPMImage.h"
+#include "fstream"
+#include <iostream>
+#include <ostream>
+#include <istream>
+#include <sstream>
 
+// default constructor
 PPMImage::PPMImage() {
 	width = height = 0;
 	maxColor = 255;
 }
+
+// testing constructor
 PPMImage::PPMImage(int width1, int height1, int maxColor1) {
     width = width1; height = height1; maxColor = maxColor1;
     lines.resize(height);
@@ -12,16 +20,33 @@ PPMImage::PPMImage(int width1, int height1, int maxColor1) {
         lines[i].setColorMax(maxColor);
     }
 }
+
+// destructor
 PPMImage::~PPMImage() {
 
 }
-PPMImage::PPMImage(string filename) {
-	
-}
-void PPMImage::loadFile(string filename) {
 
+// custom constructor creates a PPMImage from a PPM file given through the 
+// paramater filename if a bad file is given an excpetion will be thrown
+PPMImage::PPMImage(string filename) {
+    LoadFile(filename);
 }
-void PPMImage::drawLine(const int& x1, const int& y1, const int& x2, const int& y2, const RGBValue& color) {
+
+// loads the PPM file with the name defined in the string, If the file does 
+// not exist, an exception is thrown
+void PPMImage::LoadFile(string filename) {
+    ifstream in(filename, ios::binary);
+    if (!in) {
+        throw runtime_error("Bad File");
+    }
+
+    in >> *this;
+    in.close();
+}
+
+// draws a line from (startX, startY) to (endX, endY) with the color of color,
+// if either point is outside the existing image, an exception is thrown
+void PPMImage::DrawLine(const int& x1, const int& y1, const int& x2, const int& y2, const RGBValue& color) {
 
     int x = x1;
     int y = y1;
@@ -55,7 +80,7 @@ void PPMImage::drawLine(const int& x1, const int& y1, const int& x2, const int& 
             lines[y][x] = color;
         }
         else {
-            throw exception("invalid coridnates");
+            throw runtime_error("invalid coridnates");
         }
 
         // if we reached the end point, stop
@@ -77,6 +102,8 @@ void PPMImage::drawLine(const int& x1, const int& y1, const int& x2, const int& 
         }
     }
 }
+
+// copy constructor
 PPMImage& PPMImage::operator = (const PPMImage& rightValue) {
     width = rightValue.width;
     height = rightValue.height;
@@ -89,6 +116,10 @@ PPMImage& PPMImage::operator = (const PPMImage& rightValue) {
 
     return *this;
 }
+
+// overlays two images such that the resulting image has the x dimension 
+// of the image with the greater x dimension and the y dimension of the greater 
+// y dimension. pixels are added together and % by the Maximum color size +1
 PPMImage PPMImage::operator+(const PPMImage& rightValue) {
     PPMImage result;
     RGBValue newColor;
@@ -139,9 +170,14 @@ PPMImage PPMImage::operator+(const PPMImage& rightValue) {
     }
     return result;
 }
+
+// appends a PPMLine object to the end of an existing image.  If the 
+// existing image has an X pixel value of 0, an exception is thrown, 
+// if the PPMLine object does not have the same X value as the existing 
+// image, an exception is also thrown
 PPMImage PPMImage::operator + (const PPMLine& rightValue) {
     if (width == 0 || width != rightValue.getWidth()) {
-        throw exception("Image sizes don't line up");
+        throw runtime_error("Image sizes don't line up");
     }
     else {
         PPMImage copy;
@@ -151,6 +187,11 @@ PPMImage PPMImage::operator + (const PPMLine& rightValue) {
         return copy;
     }
 }
+
+// Removes the PPMImage from the existing image such that resulting image 
+// has the x dimension of the image with the greater x dimension and the y 
+// dimension of the greater y dimension. Pixel colors change: left image - 
+// right image % max color value + 1
 PPMImage PPMImage::operator - (const PPMImage& rightValue) {
     PPMImage result;
     const PPMImage* widerImage;
@@ -227,9 +268,11 @@ PPMImage PPMImage::operator - (const PPMImage& rightValue) {
     }
     return result;
 }
+
+// performs the + PPMLine functionality, but instead of returning a new PPMImage, it modifies the existing image
 PPMImage& PPMImage::operator += (const PPMLine& rightValue) {
     if (width == 0 || width != rightValue.getWidth()) {
-        throw exception("Image sizes don't line up");
+        throw runtime_error("Image sizes don't line up");
     }
     else {
         lines.push_back(rightValue);
@@ -237,6 +280,9 @@ PPMImage& PPMImage::operator += (const PPMLine& rightValue) {
         return *this;
     }
 }
+
+// returns an image so that every pixel has the value of [Maximum color 
+// size - the original pixel value]
 PPMImage PPMImage::operator - () const {
 
     PPMImage invertedCopy = *this;
@@ -250,6 +296,8 @@ PPMImage PPMImage::operator - () const {
     }
     return invertedCopy;
 }
+
+// returns true if the images are the same, otherwise false
 bool PPMImage::operator == (const PPMImage& rightValue) const {
     if (width == rightValue.width && height == rightValue.height) {
         if (width == 0 && height == 0) {
@@ -270,6 +318,8 @@ bool PPMImage::operator == (const PPMImage& rightValue) const {
     }
     return true;
 }
+
+// returns true if the images are different, otherwise false
 bool PPMImage::operator != (const PPMImage& rightValue) const {
 	if (width == rightValue.width && height == rightValue.height) {
         if (width == 0 && height == 0) {
@@ -291,9 +341,94 @@ bool PPMImage::operator != (const PPMImage& rightValue) const {
 	}
     return false;
 }
+
+// outputs the raw data (this needs to work for both file output and cout)
 ostream& operator << (ostream& out, const PPMImage& image) {
+    out << "P6\n"
+        << image.width << " " << image.height << "\n"
+        << image.maxColor << "\n";
+
+    if (image.maxColor < 256) { // 8 bit color
+        for (int i = 0; i < image.height; i++) {
+            for (int j = 0; j < image.width; j++) {
+                RGBValue pixel = image.lines[i][j];
+                unsigned char r = static_cast<unsigned char>(pixel.red);
+                unsigned char g = static_cast<unsigned char>(pixel.green);
+                unsigned char b = static_cast<unsigned char>(pixel.blue);
+                out.write(reinterpret_cast<char*>(&r), 1);
+                out.write(reinterpret_cast<char*>(&g), 1);
+                out.write(reinterpret_cast<char*>(&b), 1);
+            }
+        }
+    }
+    else { // 16 bit color
+        for (int i = 0; i < image.height; i++) {
+            for (int j = 0; j < image.width; j++) {
+                RGBValue pixel = image.lines[i][j];
+                unsigned short r = static_cast<unsigned short>(pixel.red);
+                unsigned short g = static_cast<unsigned short>(pixel.green);
+                unsigned short b = static_cast<unsigned short>(pixel.blue);
+                out.put(static_cast<char>((r >> 8) & 0xFF));
+                out.put(static_cast<char>(r & 0xFF));
+                out.put(static_cast<char>((g >> 8) & 0xFF));
+                out.put(static_cast<char>(g & 0xFF));
+                out.put(static_cast<char>((b >> 8) & 0xFF));
+                out.put(static_cast<char>(b & 0xFF));
+            }
+        }
+    }
+
     return out;
 }
+
+// reads the data from either a file stream or cin
 istream& operator >> (istream& in, PPMImage& image) {
+    string startNumber;
+    in >> startNumber;
+
+    if (!in || startNumber != "P6") {
+        throw runtime_error("Bad file");
+    }
+    
+    in >> image.width;
+    in >> image.height;
+    in >> image.maxColor;
+
+    char ch;
+    in.get(ch);
+
+    // resize PPMImage storage
+    image.lines.clear();
+    image.lines.resize(image.height);
+    for (int i = 0; i < image.height; i++) {
+        image.lines[i].setWidth(image.width);
+    }
+
+    // read pixel data
+    if (image.maxColor < 256 ) { // 8 bit color
+        for (int i = 0; i < image.height; i++) {
+            for (int j = 0; j < image.width; j++) {
+                unsigned char r, g, b;
+                in.read(reinterpret_cast<char*>(&r), 1);
+                in.read(reinterpret_cast<char*>(&g), 1);
+                in.read(reinterpret_cast<char*>(&b), 1);
+                image.lines[i][j].red = static_cast<int>(r);
+                image.lines[i][j].green = static_cast<int>(g);
+                image.lines[i][j].blue = static_cast<int>(b);
+            }
+        }
+    }
+    else { // 16 bit color
+        for (int i = 0; i < image.height; i++) {
+            for (int j = 0; j < image.width; j++) {
+                unsigned char bytes[6];
+                in.read(reinterpret_cast<char*>(bytes), 6);
+
+                image.lines[i][j].red = (bytes[0] << 8) | bytes[1];
+                image.lines[i][j].green = (bytes[2] << 8) | bytes[3];
+                image.lines[i][j].blue = (bytes[4] << 8) | bytes[5];
+            }
+        }
+    }
     return in;
 }
